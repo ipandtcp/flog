@@ -30,7 +30,7 @@ type Log struct {
 	wFileName	string	// warning file name
 	eFileName	string	// err file name
 	AllInOne	bool	// all level logs in one file
-	NewFileInterval int	// day
+	NewFileInterval time.Duration
 	Umask		uint32
 	Mode	        Mode
 }
@@ -60,8 +60,28 @@ func (l *Log) Init() error {
 		l.warnFile = os.Stderr
 		return nil
 	}
-	if l.LogPath == "" || l.Umask == 0 || l.NewFileInterval == 0 {
-		return errors.New("logPath or Umask or NewFileInterval value error")
+
+	if l.LogPath == "" {
+	    path, err := os.Getwd()
+	    if err != nil {
+		    return err
+	    }
+	    l.LogPath = path + "/log"
+	   fmt.Println("[WARNING] | " + time.Now().Format("06/01/02 - 15:04:05.000 | ") + " set default LogPath to "+ l.LogPath) 
+	}
+
+	if l.Umask == 0 {
+		l.Umask = 0666
+		fmt.Println("[WARNING] | " + time.Now().Format("06/01/02 - 15:04:05.000 | ") + " set default Umask to 666")
+	}
+
+	if l.NewFileInterval == 0 {
+		l.NewFileInterval = time.Duration(24 * time.Hour)
+		fmt.Println("[WARNING] | " + time.Now().Format("06/01/02 - 15:04:05.000 | ") + " set default NewFileInterval to ", l.NewFileInterval)
+	}
+
+	if l.NewFileInterval < time.Duration(1 * time.Minute) {
+		return errors.New(fmt.Sprintf("NewFileInterval value to low, must >= %d", time.Duration(1 * time.Minute)))
 	}
 
 	if l.LogPath[len(l.LogPath)-1] == '/' {
@@ -70,7 +90,7 @@ func (l *Log) Init() error {
 
 	_, err := os.Stat(l.LogPath)
 	if err != nil {
-		err := os.MkdirAll(l.LogPath, os.FileMode(l.Umask))
+		err := os.MkdirAll(l.LogPath, os.FileMode(l.Umask|0110))
 		if err != nil {
 			return err
 		}
@@ -97,7 +117,7 @@ func (l *Log) writerCheck() {
 
 	if l.AllInOne {
 		// if file not need create new
-		if now.Before(l.filesCreateTime.AddDate(0, 0, l.NewFileInterval)) && fileExist(l.iFileName) {
+		if now.Before(l.filesCreateTime.Add(l.NewFileInterval)) && fileExist(l.iFileName) {
 			return
 		}
 
@@ -129,7 +149,7 @@ func (l *Log) writerCheck() {
 		}
 	} else {
 		// if file not need create new
-		if now.Before(l.filesCreateTime.AddDate(0, 0, l.NewFileInterval)) && 
+		if now.Before(l.filesCreateTime.Add(l.NewFileInterval)) && 
 			fileExist(l.iFileName) && fileExist(l.wFileName) && fileExist(l.eFileName) {
 			return
 		}
