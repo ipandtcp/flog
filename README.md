@@ -1,7 +1,8 @@
 Golang simple file log
 ================
 
-NOTE: This package will redirect stdout to info logfile and redirect stderr to err logfile when mode = release, All Debug log will igore when mode != debug
+### NOTE
+This package will redirect stdout to info logfile and redirect stderr to err logfile when mode = release, All Debug log will ignore when mode != debug
 
 ### Example
 
